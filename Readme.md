@@ -1,185 +1,236 @@
-Setup
+# 🧪 SauceDemo Automation Framework
 
-1. Install JDK 8 and Maven.
-2. Import project to any IDE (Eclipse or VS Code).
-3. In terminal run: mvn clean test  (builds and runs all 3 tests)
-   or: mvn clean compile  (build only, no tests)
+A Selenium WebDriver test automation framework built with **Java, TestNG and Maven**, using the **Page Object Model**, CSV-driven test data, and rich reporting (TestNG, Extent, Log4j, and step-by-step screenshots in Word documents).
 
-Running the tests
+![Java](https://img.shields.io/badge/Java-8-orange)
+![Selenium](https://img.shields.io/badge/Selenium-WebDriver-43B02A)
+![TestNG](https://img.shields.io/badge/TestNG-Framework-red)
+![Maven](https://img.shields.io/badge/Maven-Build-C71A36)
 
-All 3 test cases:
+---
 
-   mvn clean test
+## 📑 Table of Contents
 
-Note the order: clean first, test second. "mvn test clean" runs the tests
-and then deletes the results, so it is never what you want.
+- [Tech Stack](#-tech-stack)
+- [Quick Start](#-quick-start)
+- [Running the Tests](#-running-the-tests)
+- [Test Cases](#-test-cases)
+- [How the Framework Works](#-how-the-framework-works)
+- [Project Structure](#-project-structure)
+- [Configuration](#-configuration)
+- [Test Data](#-test-data)
+- [Reports and Screenshots](#-reports-and-screenshots)
 
-Just 1 test case, use -Dtest=LoginTest#methodName:
+---
 
-   mvn test -Dtest=LoginTest#testValidLogin
-   mvn test -Dtest=LoginTest#testInvalidLoginError
-   mvn test -Dtest=LoginTest#testAddToCartAndCheckout
+## 🛠 Tech Stack
 
-You can also run one test from the IDE: open
-src/test/java/com/framework/tests/LoginTest.java and run the single method.
+| Area | Tool |
+|---|---|
+| Browser automation | Selenium WebDriver |
+| Language | Java 8 |
+| Test runner | TestNG |
+| Build tool | Maven |
+| Design pattern | Page Object Model |
+| Test data | CSV |
+| Reporting | ExtentReports, TestNG HTML, Log4j |
+| Word documents | Apache POI (.docx writer) |
 
-What the framework is, in plain words
-A framework is just other classes you wrote, that your tests use instead of
-writing the same setup again and again. There is no magic and no special tool.
+---
 
-Think of it as three layers:
+## 🚀 Quick Start
 
-   the TESTS      LoginTest        what we are checking
-   the PAGES      LoginPage,       how to drive one screen
-                  CartPage,
-                  CheckoutPage
-   the SUPPORT    DriverFactory,   browser, config file, reading the csv,
-                  BasePage,        waiting, reporting
-                  ConfigReader,    <-- reuse these in your own project
-                  Report,          This is the part worth copying.
-                  ScreenshotStore,
-                  ExtentManager
+1. Install **JDK 8** and **Maven**.
+2. Import the project into any IDE (Eclipse or VS Code).
+3. Run in the terminal:
 
-A test never touches the browser directly. It asks a page object to do
-something, and the page objects use the support classes. That is the whole
-idea, and it is why you can swap Selenium out one day and only have to change
-one layer.
+```bash
+mvn clean test      # build and run all 3 tests
+mvn clean compile   # build only, no tests
+```
 
-Two things to understand properly
-1. INHERITANCE
-   "class LoginTest extends BaseTest" means LoginTest gets everything in
-   BaseTest for free: the open browser, the csv data, the close browser.
-   BaseTest also uses @BeforeClass / @BeforeMethod / @AfterClass, so those
-   methods run automatically. LoginTest therefore contains only the actual
-   checking, with no setup code at all.
+---
 
-   The same trick is used inside the pages: CartPage extends BasePage, so it
-   gets type(), click() and waitFor() for free.
+## ▶️ Running the Tests
 
-2. CONFIGURATION
-   config.properties holds the things you want to change without touching
-   Java code:
+**Run all test cases**
 
-      browser=chrome
-      url=https://www.saucedemo.com
-      headless=false
+```bash
+mvn clean test
+```
 
-   ConfigReader reads that file once and hands the values out. Nothing else in
-   the project opens a properties file.
+> ⚠️ **Order matters:** `clean` first, `test` second. `mvn test clean` runs the tests and then deletes the results.
 
-   The other configuration file is testng.xml. It says which test classes to
-   run and registers TestListener. Surefire is told to read it in pom.xml.
+**Run a single test case**
 
-Project structure
+```bash
+mvn test -Dtest=LoginTest#testValidLogin
+mvn test -Dtest=LoginTest#testInvalidLoginError
+mvn test -Dtest=LoginTest#testAddToCartAndCheckout
+```
 
-src/main/java/com/framework/     the reusable part, no TestNG in here
-   core/DriverFactory    starts and stops the browser
-   pages/BasePage        shared waiting and typing, inherited by the pages
-   pages/LoginPage       the login form and the error box
-   pages/CartPage        the product grid and the cart
-   pages/CheckoutPage    the checkout steps and the confirmation screen
-   utils/ConfigReader    reads config.properties
-   utils/Report          the one place a step gets logged
-   utils/ExtentManager   builds the Extent HTML report
-   utils/ScreenshotStore takes the pictures and writes the Word documents
+You can also run one test from the IDE: open `src/test/java/com/framework/tests/LoginTest.java` and run a single method.
 
-src/test/java/com/framework/     the part that only makes sense with tests
-   core/BaseTest         opens the browser, reads the csv, inherited by the tests
-   core/TestListener     TestNG calls this, it builds the reports
-   models/TestData       one row of the csv
-   utils/CsvReader       reads the csv into TestData objects
-   tests/LoginTest       the 3 test cases
+---
 
-src/test/resources/testng.xml          which tests to run
-src/test/resources/testdata/           credentials.csv
+## ✅ Test Cases
 
-Why is some of it in src/main/java and some in src/test/java?
-The rule is: src/main/java holds code another project could reuse as it is.
-src/test/java holds code that only makes sense next to a test.
+| # | Test method | What it verifies |
+|---|---|---|
+| 1 | `testValidLogin` | A valid user lands on the inventory page |
+| 2 | `testInvalidLoginError` | An invalid user sees the correct error message |
+| 3 | `testAddToCartAndCheckout` | Login, add a product to the cart, checkout, and place the order |
 
-CsvReader is in src/test/java because it mentions TestData, and TestData is
-test data. Java does not allow a class in src/main/java to import a class in
-src/test/java, so as soon as a class names TestData it has to be test code.
+---
 
-You can check this yourself: run mvn package -DskipTests, then open
-target/com.saucedemo-0.0.1-SNAPSHOT.jar. It contains DriverFactory, the page
-objects, ConfigReader, Report, ExtentManager and ScreenshotStore. No BaseTest,
-no TestListener, no TestData. That is what "the production jar" looks like.
+## 🧩 How the Framework Works
 
-Which class does what
-Report is the only class the page objects talk to. A call to
-Report.info("added to cart") does three things at once: writes a line to
-automation.log, adds a line to the Extent report, and takes a screenshot for
-that step. The page objects never mention Extent or Log4j, so the reporting
-can be replaced later without touching a single page.
+A framework is simply a set of classes your tests reuse instead of repeating the same setup. There is no magic and no special tool.
 
-TestListener is registered in testng.xml, not as a parent of the test classes.
-TestNG builds a separate instance of a listener, so it cannot see the browser
-that BaseTest created, and asks for it with DriverFactory.get() instead.
+It has three layers:
 
-Each test starts by going back to the login page. The browser is opened once
-for the whole class, so without that the second test would still be on the page
-the first test finished on. It is also why the tests can run in any order.
+| Layer | Classes | Responsibility |
+|---|---|---|
+| **Tests** | `LoginTest` | What we are checking |
+| **Pages** | `LoginPage`, `CartPage`, `CheckoutPage` | How to drive one screen |
+| **Support** | `DriverFactory`, `BasePage`, `ConfigReader`, `Report`, `ScreenshotStore`, `ExtentManager` | Browser, config, waiting, reporting. This is the part worth reusing in your own projects. |
 
-Note: Chrome and Edge raise a "password found in a data breach, change it"
-bubble after a login. That bubble is browser UI, not part of the page, so
-Selenium cannot click it, and it sits over the header and swallows clicks meant
-for the cart link. DriverFactory turns that warning off so it never appears.
+A test never touches the browser directly. It asks a page object to do something, and the page objects use the support classes. This is why you could swap Selenium out one day and only change one layer.
 
-Tool used
-Selenium WebDriver, Java, TestNG, Maven, Page Object Model, CSV test data,
-ExtentReports, Log4j, Apache POI (the .docx writer)
+### 1. Inheritance
 
-Reports
-All 3 land in reports/ at the project root, next to each other:
+- `LoginTest extends BaseTest` gets the open browser, the CSV data and the browser teardown for free. `BaseTest` uses `@BeforeClass`, `@BeforeMethod` and `@AfterClass`, so those run automatically. `LoginTest` contains only the actual checks, with no setup code.
+- The same idea is used in the pages: `CartPage extends BasePage` and gets `type()`, `click()` and `waitFor()` for free.
 
-   reports/testng/index.html    -> TestNG, pass/fail per test
-   reports/extent/index.html    -> Extent, every step + a screenshot on each one
-   reports/logs/automation.log  -> Log4j, what the browser did
+### 2. Configuration
 
-Screenshots and Word documents
-One screenshot is taken at every step and embedded into that test's Word
-document. The only files written are the 3 documents, in screenshots/ at the
-project root, outside reports/:
+`config.properties` holds values you can change without touching Java code:
 
-   screenshots/TC01_Valid_login_lands_on_the_home_page.docx       3 pictures
-   screenshots/TC02_Invalid_login_shows_the_error_message.docx    3 pictures
-   screenshots/TC03_Login__add_to_cart_and_place_the_order.docx  11 pictures
+```properties
+browser=chrome
+url=https://www.saucedemo.com
+headless=false
+```
 
-Each document is named TCnn_test description, numbered in the order the tests
-run and restarting at TC01 every run. The same number is the first line inside
-the document, so a page pulled out of a file still says which case it belongs
-to.
+`ConfigReader` reads this file once and hands the values out. Nothing else in the project opens a properties file.
 
-Note the sizes. The Extent report embeds every screenshot too, so it is about
-2.7 MB for 3 tests. Running headless shrinks each picture. The run also takes
-about 30 seconds longer, because a screenshot is a round trip to the browser.
+The other configuration file is `testng.xml`. It defines which test classes to run and registers `TestListener`. Surefire is pointed to it in `pom.xml`.
 
-Open reports/extent/index.html to read a run. It is one self-contained file, so
-it can be emailed or attached to a ticket and still show the screenshots.
+### Key design notes
 
-The TestNG report cannot show screenshots at all. Its HTML reporter has no
-image attachment feature, so read pictures from the Extent report or the Word
-documents.
+- **`Report` is the only class page objects talk to.** One call such as `Report.info("added to cart")` writes a line to `automation.log`, adds a step to the Extent report, and takes a screenshot. Page objects never mention Extent or Log4j, so reporting can be replaced without touching any page.
+- **`TestListener` is registered in `testng.xml`**, not as a parent of the test classes. TestNG creates a separate listener instance that cannot see the browser `BaseTest` opened, so it fetches it with `DriverFactory.get()`.
+- **Every test starts from the login page.** The browser opens once per class, so without this the second test would begin wherever the first one ended. It also means tests can run in any order.
+- **Browser password-breach popup is disabled.** Chrome and Edge show a "password found in a data breach" bubble after login. It is browser UI, so Selenium cannot click it, and it can block clicks on the cart link. `DriverFactory` turns this warning off.
 
-The TestNG report needs its 9 side files (css/js/icons) to render, so open it
-from inside reports/testng/ rather than copying index.html out on its own. It
-also opens with the test list collapsed: click "(show)" under "Passed methods",
-then click a test name to load its details.
+---
 
-reports/ is created by the test run and is in .gitignore, along with target/.
+## 📁 Project Structure
 
-Test cases
-1. testValidLogin          -> valid user lands on inventory page
-2. testInvalidLoginError   -> invalid user gets the error message text
-3. testAddToCartAndCheckout -> login, add product to cart, checkout, place order
+```
+src/
+├── main/java/com/framework/            ← reusable part (no TestNG here)
+│   ├── core/
+│   │   └── DriverFactory               starts and stops the browser
+│   ├── pages/
+│   │   ├── BasePage                    shared waiting and typing
+│   │   ├── LoginPage                   login form and error box
+│   │   ├── CartPage                    product grid and cart
+│   │   └── CheckoutPage                checkout steps and confirmation
+│   └── utils/
+│       ├── ConfigReader                reads config.properties
+│       ├── Report                      single place where a step is logged
+│       ├── ExtentManager               builds the Extent HTML report
+│       └── ScreenshotStore             takes screenshots, writes Word docs
+│
+└── test/
+    ├── java/com/framework/             ← only makes sense with tests
+    │   ├── core/
+    │   │   ├── BaseTest                opens browser, reads CSV
+    │   │   └── TestListener            builds the reports
+    │   ├── models/
+    │   │   └── TestData                one row of the CSV
+    │   ├── utils/
+    │   │   └── CsvReader               reads CSV into TestData objects
+    │   └── tests/
+    │       └── LoginTest               the 3 test cases
+    └── resources/
+        ├── testng.xml                  which tests to run
+        └── testdata/
+            └── credentials.csv         test data
+```
 
-Test data
-src/test/resources/testdata/credentials.csv
-columns: username,password,valid,error,firstname,lastname,zipcode
-row 1 = valid user (standard_user), row 2 = invalid user (invalid_user)
-checkout info: firstname prajwal, lastname hegde, zipcode 576227
+### Why split `src/main/java` and `src/test/java`?
 
-Passwords live in that csv and nowhere else. They are never written to
-automation.log or to either report, because a report gets emailed and pasted
-into tickets.
+- `src/main/java` holds code another project could reuse as-is.
+- `src/test/java` holds code that only makes sense next to a test.
+
+`CsvReader` lives in `src/test/java` because it references `TestData`, which is test data. Java does not allow `src/main/java` to import from `src/test/java`, so any class that names `TestData` must be test code.
+
+**Verify it yourself:**
+
+```bash
+mvn package -DskipTests
+```
+
+Then open `target/com.saucedemo-0.0.1-SNAPSHOT.jar`. It contains `DriverFactory`, the page objects, `ConfigReader`, `Report`, `ExtentManager` and `ScreenshotStore`, but no `BaseTest`, `TestListener` or `TestData`.
+
+---
+
+## ⚙️ Configuration
+
+| File | Purpose |
+|---|---|
+| `config.properties` | Browser, URL, headless mode |
+| `testng.xml` | Test classes to run, listener registration |
+| `pom.xml` | Dependencies, Surefire pointing to `testng.xml` |
+
+---
+
+## 📊 Test Data
+
+**File:** `src/test/resources/testdata/credentials.csv`
+
+**Columns:** `username,password,valid,error,firstname,lastname,zipcode`
+
+| Row | Purpose |
+|---|---|
+| 1 | Valid user (`standard_user`) |
+| 2 | Invalid user (`invalid_user`) |
+
+Checkout info used: first name `prajwal`, last name `hegde`, zip code `576227`.
+
+> 🔒 Passwords live in the CSV and nowhere else. They are never written to `automation.log` or to any report, because reports get emailed and pasted into tickets.
+
+---
+
+## 📈 Reports and Screenshots
+
+All reports are generated in `reports/` at the project root after each run:
+
+| Report | Path | Contents |
+|---|---|---|
+| TestNG | `reports/testng/index.html` | Pass/fail per test |
+| Extent | `reports/extent/index.html` | Every step with a screenshot |
+| Log4j | `reports/logs/automation.log` | What the browser did |
+
+### 📄 Word documents with screenshots
+
+One screenshot is taken at every step and embedded in that test's Word document. These are saved in `screenshots/` at the project root (outside `reports/`):
+
+| File | Screenshots |
+|---|---|
+| `TC01_Valid_login_lands_on_the_home_page.docx` | 3 |
+| `TC02_Invalid_login_shows_the_error_message.docx` | 3 |
+| `TC03_Login__add_to_cart_and_place_the_order.docx` | 11 |
+
+Files are named `TCnn_test description`, numbered in run order, and restart at `TC01` every run. The same number appears as the first line inside each document, so a page pulled out of the file still shows which test case it belongs to.
+
+### 💡 Good to know
+
+- **Extent report** is a single self-contained file, so it can be emailed or attached to a ticket and still shows all screenshots. It is about **2.7 MB** for 3 tests because every screenshot is embedded.
+- **Headless mode** shrinks each picture.
+- **Run time** increases by about 30 seconds with screenshots, since each one is a round trip to the browser.
+- **TestNG report** cannot show screenshots (its HTML reporter has no image attachment feature). Use the Extent report or the Word documents for pictures.
+- **TestNG report** needs its 9 side files (CSS, JS, icons) to render, so open it from inside `reports/testng/` rather than copying `index.html` out alone. It opens with the test list collapsed: click **(show)** under *Passed methods*, then click a test name to load its details.
+- `reports/` and `target/` are generated by runs and listed in `.gitignore`.
