@@ -2,7 +2,7 @@
 
 A Selenium WebDriver test automation framework built with **Java, TestNG and Maven**, using the **Page Object Model**, CSV-driven test data, and rich reporting (TestNG, Extent, Log4j, and step-by-step screenshots in Word documents).
 
-![Java](https://img.shields.io/badge/Java-8-orange)
+![Java](https://img.shields.io/badge/Java-21-orange)
 ![Selenium](https://img.shields.io/badge/Selenium-WebDriver-43B02A)
 ![TestNG](https://img.shields.io/badge/TestNG-Framework-red)
 ![Maven](https://img.shields.io/badge/Maven-Build-C71A36)
