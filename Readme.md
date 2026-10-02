@@ -28,7 +28,7 @@ A Selenium WebDriver test automation framework built with **Java, TestNG and Mav
 | Area | Tool |
 |---|---|
 | Browser automation | Selenium WebDriver |
-| Language | Java 8 |
+| Language | Java |
 | Test runner | TestNG |
 | Build tool | Maven |
 | Design pattern | Page Object Model |
@@ -40,7 +40,7 @@ A Selenium WebDriver test automation framework built with **Java, TestNG and Mav
 
 ## 🚀 Quick Start
 
-1. Install **JDK 8** and **Maven**.
+1. Install **JDK 21** and **Maven**.
 2. Import the project into any IDE (Eclipse or VS Code).
 3. Run in the terminal:
 
