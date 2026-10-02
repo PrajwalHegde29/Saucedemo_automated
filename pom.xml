@@ -1,0 +1,199 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.saucedemo</groupId>
+  <artifactId>com.saucedemo</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+
+  <properties>
+    <!--
+      Java 21. Eclipse 2026-03 runs on Java 21 and its launcher cannot read the old
+      "1.8.0_251" version string (it gives "non-numeric 0_251"), so the project matches
+      the JDK that is installed.
+
+      <release> is preferred over separate source/target. It checks the API against the
+      real Java 21 API, so the code cannot accidentally use a method that only exists in
+      a newer JDK, which separate source/target would not catch.
+    -->
+    <maven.compiler.source>21</maven.compiler.source>
+    <maven.compiler.target>21</maven.compiler.target>
+    <maven.compiler.release>21</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+
+  <dependencies>
+    <!-- https://mvnrepository.com/artifact/org.seleniumhq.selenium/selenium-java (4.10.0 = new chromedriver support, still Java 8) -->
+    <dependency>
+      <groupId>org.seleniumhq.selenium</groupId>
+      <artifactId>selenium-java</artifactId>
+      <version>4.10.0</version>
+    </dependency>
+
+    <!-- https://mvnrepository.com/artifact/io.github.bonigarcia/webdrivermanager -->
+    <dependency>
+      <groupId>io.github.bonigarcia</groupId>
+      <artifactId>webdrivermanager</artifactId>
+      <version>5.9.3</version>
+    </dependency>
+
+    <!-- https://mvnrepository.com/artifact/org.testng/testng (7.4.0 = last version that works with Java 8) -->
+    <dependency>
+      <groupId>org.testng</groupId>
+      <artifactId>testng</artifactId>
+      <version>7.4.0</version>
+      <!-- test scoped, and it stays that way: BaseTest and TestListener use TestNG
+           annotations, so they live in src/test/java rather than src/main/java. Nothing
+           in src/main/java imports TestNG, which is what makes this correct here. -->
+      <scope>test</scope>
+    </dependency>
+
+    <!-- https://mvnrepository.com/artifact/com.aventstack/extentreports
+         The HTML report, with a screenshot on every step.
+         5.1.2 = latest release. This was 4.1.6 while the project was on Java 8, because
+         the 5.x jars are built for Java 11 and would not load there. On Java 21 we can
+         use the current version.
+
+         ExtentSparkReporter is used rather than ExtentHtmlReporter because only the Spark
+         templates actually write an attached screenshot into index.html. Verified both:
+         with ExtentHtmlReporter the picture is silently dropped. See ExtentManager.java. -->
+    <dependency>
+      <groupId>com.aventstack</groupId>
+      <artifactId>extentreports</artifactId>
+      <version>5.1.2</version>
+    </dependency>
+
+    <!-- https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-core
+         2.26.1 = newest release. Staying on the 2.x line, not the 3.0.0-beta, because
+         3.x changes the plugin and configuration names and this project's log4j2.xml
+         is written for 2.x.
+
+         Both artifacts are needed: log4j-api is the interface the code calls, log4j-core
+         is what actually writes the file. -->
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-api</artifactId>
+      <version>2.26.1</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-core</artifactId>
+      <version>2.26.1</version>
+    </dependency>
+
+    <!-- https://mvnrepository.com/artifact/org.apache.poi/poi-ooxml
+         Writes the per test Word documents. poi-ooxml (not plain poi) is the one that
+         can put an image into a document. 5.5.1 = latest release. -->
+    <dependency>
+      <groupId>org.apache.poi</groupId>
+      <artifactId>poi-ooxml</artifactId>
+      <version>5.5.1</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <!--
+        3.8.1 is too old to understand the release setting, it passes it straight to javac
+        and javac rejects it as an unknown flag. 3.13.0 is needed for Java 21.
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.13.0</version>
+        <configuration>
+          <release>21</release>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>3.0.0</version>
+        <configuration>
+          <!-- Run the checked in suite from src/test/resources/testng.xml instead of letting
+               TestNG guess which classes to run. This is also where TestListener is
+               registered. -->
+          <suiteXmlFiles>
+            <suiteXmlFile>src/test/resources/testng.xml</suiteXmlFile>
+          </suiteXmlFiles>
+
+          <!-- Surefire normally dumps the TestNG report in target/surefire-reports, which leaves
+               the three reports split across two places. Pointing it at reports/testng at the
+               project root keeps TestNG, Extent and Log4j as three sibling folders, and keeps
+               them outside target/ so `mvn clean` no longer deletes finished reports. -->
+          <reportsDirectory>${project.basedir}/reports/testng</reportsDirectory>
+        </configuration>
+      </plugin>
+
+      <!--
+        TestNG writes about 20 files next to the one page you actually open. Only
+        index.html and the assets it loads are needed to read the report, so this drops
+        the rest after the run.
+
+        Kept (index.html references each of these by name):
+          index.html, testng-reports.css, testng-reports1.css,
+          jquery.min.js, testng-reports.js, testng-reports2.js,
+          collapseall.gif, passed.png, failed.png, skipped.png
+
+        Dropped, none of it reachable from index.html:
+          old/             - TestNG's copy of the previous run's pages
+          <suite name>/    - per-suite sub pages, named after the suite, superseded
+                             by index.html
+          junitreports/    - same results again in JUnit XML
+          emailable-report.html, *.xml, TestSuite.txt - other output formats
+          testng.css, bullet_point.png, navigator-bullet.png - used only by the
+                             dropped sub pages
+          *.dumpstream     - JVM crash notes
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-clean-plugin</artifactId>
+        <version>3.2.0</version>
+        <executions>
+          <execution>
+            <id>trim-testng-report</id>
+            <!-- after surefire has written the report, still inside the test phase -->
+            <phase>test</phase>
+            <goals>
+              <goal>clean</goal>
+            </goals>
+            <configuration>
+              <!-- Without this the clean goal also removes target/ itself, which would
+                   throw away the compiled classes at the end of every run. This only
+                   matters for this execution; `mvn clean` still wipes target/ as usual. -->
+              <excludeDefaultDirectories>true</excludeDefaultDirectories>
+              <!--
+                Written as a keep list rather than a delete list on purpose.
+
+                TestNG puts anything secondary in a subfolder named after the suite, so the
+                folder to remove moves as soon as the suite is renamed. Deleting a hardcoded
+                "Surefire suite" folder left reports/testng/SauceDemo/ behind the moment
+                testng.xml named the suite. Listing what to keep means a renamed suite, an
+                added report or a new TestNG version cannot reintroduce leftover files.
+
+                The 10 files kept below are index.html plus the 9 css/js/image assets
+                index.html loads. Without them the report is a page of broken icons.
+              -->
+              <filesets>
+                <fileset>
+                  <directory>${project.basedir}/reports/testng</directory>
+                  <excludes>
+                    <exclude>index.html</exclude>
+                    <exclude>collapseall.gif</exclude>
+                    <exclude>failed.png</exclude>
+                    <exclude>passed.png</exclude>
+                    <exclude>skipped.png</exclude>
+                    <exclude>jquery.min.js</exclude>
+                    <exclude>testng-reports.css</exclude>
+                    <exclude>testng-reports.js</exclude>
+                    <exclude>testng-reports1.css</exclude>
+                    <exclude>testng-reports2.js</exclude>
+                  </excludes>
+                </fileset>
+              </filesets>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

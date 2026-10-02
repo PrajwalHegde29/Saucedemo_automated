@@ -1,0 +1,42 @@
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+
+<!--
+  The list of tests to run. Surefire is pointed at this file in pom.xml, so `mvn test`
+  runs exactly what is written here instead of trying to guess.
+
+  Two things live in this file:
+
+  1. <listeners> - registers TestListener, which is what builds the reports.
+     This is the ONLY place it is registered. There used to be a second registration in
+     META-INF/services, and having both made every TestNG callback run twice.
+
+  2. <classes> - which test classes to run. Add a line here when you write a new class.
+
+  parallel="none" and thread-count="1" mean the tests run one after another. That is on
+  purpose: three Chrome windows at once is heavy on a laptop.
+
+  If you want to run only the quick tests while you are working, put this inside <test>:
+
+      <groups>
+          <run>
+              <include name="smoke"/>
+          </run>
+      </groups>
+
+  ...and delete it again before a full run.
+-->
+<suite name="SauceDemo" verbose="0" parallel="none" thread-count="1">
+
+    <listeners>
+        <listener class-name="com.framework.core.TestListener"/>
+    </listeners>
+
+    <test name="All">
+
+        <classes>
+            <class name="com.framework.tests.LoginTest"/>
+        </classes>
+
+    </test>
+
+</suite>
